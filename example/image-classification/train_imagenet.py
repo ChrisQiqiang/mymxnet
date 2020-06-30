@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.DEBUG)
 from common import find_mxnet, data, fit
 from common.util import download_file
 import mxnet as mx
+from mxnet import profiler
 
 def set_imagenet_aug(aug):
     # standard data augmentation setting for imagenet training
@@ -53,7 +54,9 @@ if __name__ == '__main__':
         # train
         num_epochs       = 80,
         lr_step_epochs   = '30,60',
-        dtype            = 'float32'
+        dtype            = 'float32',
+        disp_batches = 1
+        # profile_server_suffix = 1
     )
     args = parser.parse_args()
 
@@ -61,6 +64,13 @@ if __name__ == '__main__':
     from importlib import import_module
     net = import_module('symbols.'+args.network)
     sym = net.get_symbol(**vars(args))
-
+    # profiler.set_config(profile_all=True,
+    #                     aggregate_stats=True,
+    #                     continuous_dump=True,
+    #                     filename='profile_output.json')
+    # profiler.set_state('run')
     # train
     fit.fit(args, sym, data.get_rec_iter)
+    # profiler.set_state('stop')
+    # Dump all results to log file before download
+    # profiler.dump()
