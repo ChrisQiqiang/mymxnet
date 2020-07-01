@@ -28,6 +28,16 @@ from mxnet import module
 
 def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
+
+    print("before push in  _chris_update_params_on_kvstore, time is:",time.time())
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
+        # push gradient, priority is negative index
+        kvstore.push(name, grad_list, priority=-index)
+    print("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
         arg_list, grad_list = pair
         if grad_list[0] is None:
@@ -37,6 +47,7 @@ def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_na
         kvstore.push(name, grad_list, priority=-index)
         # pull back the weights
         kvstore.pull(name, arg_list, priority=-index)
+    print("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
 
 class MyModule(mx.mod.Module):
     def update(self):
