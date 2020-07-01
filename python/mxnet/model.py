@@ -144,6 +144,7 @@ def _update_params_on_kvstore_nccl(param_arrays, grad_arrays, kvstore, param_nam
 
 def _update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
+    print("python: start kvstore.push(), time is:",time.time())
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
         arg_list, grad_list = pair
         if grad_list[0] is None:
@@ -151,8 +152,15 @@ def _update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
         name = param_names[index]
         # push gradient, priority is negative index
         kvstore.push(name, grad_list, priority=-index)
+    print("python: start kvstore.pull(), time is:",time.time())
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
         # pull back the weights
         kvstore.pull(name, arg_list, priority=-index)
+    print("python: end kvstore.pull(), time is:",time.time())
 
 def _update_params(param_arrays, grad_arrays, updater, num_device,
                    kvstore=None, param_names=None):
