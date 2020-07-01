@@ -38,6 +38,9 @@ def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_na
         # push gradient, priority is negative index
         kvstore.push(name, grad_list, priority=-index)
     print("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
+    if os.getenv('PULL_SLEEP_TIME') is not None:
+        delay = float(os.getenv('PULL_SLEEP_TIME'))
+        time.sleep(delay)
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
         arg_list, grad_list = pair
         if grad_list[0] is None:
@@ -151,6 +154,8 @@ def add_fit_args(parser):
                        help='the batch size')
     train.add_argument('--disp-batches', type=int, default=20,
                        help='show progress for every n batches')
+    train.add_argument('--pull_wait_time', type=float, default=1,
+                    help='pull opr do not execute immediately')
     train.add_argument('--model-prefix', type=str,
                        help='model prefix')
     train.add_argument('--save-period', type=int, default=1, help='params saving period')
