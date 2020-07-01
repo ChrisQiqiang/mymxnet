@@ -37,10 +37,11 @@ def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_na
         name = param_names[index]
         # push gradient, priority is negative index
         kvstore.push(name, grad_list, priority=-index)
-    print("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
     if os.getenv('PULL_SLEEP_TIME') is not None:
-        delay = float(os.getenv('PULL_SLEEP_TIME'))
+        delay = os.getenv('PULL_SLEEP_TIME')
+        print(delay)
         time.sleep(delay)
+    print("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
         arg_list, grad_list = pair
         if grad_list[0] is None:
