@@ -47,8 +47,6 @@ def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_na
         if grad_list[0] is None:
             continue
         name = param_names[index]
-        # push gradient, priority is negative index
-        kvstore.push(name, grad_list, priority=-index)
         # pull back the weights
         kvstore.pull(name, arg_list, priority=-index)
     print("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
