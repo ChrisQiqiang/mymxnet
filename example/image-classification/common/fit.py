@@ -22,6 +22,38 @@ import time
 import re
 import math
 import mxnet as mx
+from mxnet import kvstore
+from mxnet import module
+
+
+def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
+    """Perform update of param_arrays from grad_arrays on kvstore."""
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
+        # push gradient, priority is negative index
+        kvstore.push(name, grad_list, priority=-index)
+        # pull back the weights
+        kvstore.pull(name, arg_list, priority=-index)
+
+class MyModule(mx.mod.Module):
+    def update(self):
+        assert self.binded and self.params_initialized and self.optimizer_initialized
+        self._params_dirty = True
+        if self._update_on_kvstore:
+            _chris_update_params_on_kvstore(self._exec_group.param_arrays,
+                                      self._exec_group.grad_arrays,
+                                      self._kvstore, self._exec_group.param_names)
+        else:
+            mx.model._update_params(self._exec_group.param_arrays,
+                           self._exec_group.grad_arrays,
+                           updater=self._updater,
+                           num_device=len(self._context),
+                           kvstore=self._kvstore,
+                           param_names=self._exec_group.param_names)
+
 
 def get_epoch_size(args, kv):
     return math.ceil(int(args.num_examples / kv.num_workers) / args.batch_size)
@@ -130,7 +162,7 @@ def add_fit_args(parser):
                        help='threshold for 2bit gradient compression')
     # additional parameters for large batch sgd
     train.add_argument('--macrobatch-size', type=int, default=0,
-                       help='distributed effective batch size')
+                         help='distributed effective batch size')
     train.add_argument('--warmup-epochs', type=int, default=5,
                        help='the epochs to ramp-up lr to scaled large-batch value')
     train.add_argument('--warmup-strategy', type=str, default='linear',
@@ -142,6 +174,10 @@ def add_fit_args(parser):
                        help='profile server actions into a file with name like rank1_ followed by this suffix \
                              during distributed training')
     return train
+
+
+
+
 
 
 def fit(args, network, data_loader, **kwargs):
@@ -219,7 +255,7 @@ def fit(args, network, data_loader, **kwargs):
     lr, lr_scheduler = _get_lr_scheduler(args, kv)
 
     # create model
-    model = mx.mod.Module(
+    model = MyModule(
         context=devs,
         symbol=network
     )
