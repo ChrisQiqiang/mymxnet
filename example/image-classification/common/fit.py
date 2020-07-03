@@ -34,7 +34,7 @@ from mxnet.model import BatchEndParam
 from mxnet.initializer import Uniform
 from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
-
+from mxnet import context as ctx
 
 class MyModule(mx.mod.Module):
     def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
