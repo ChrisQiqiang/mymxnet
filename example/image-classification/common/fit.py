@@ -37,7 +37,10 @@ from mxnet.base import _as_list
 
 
 class MyModule(mx.mod.Module):
-    def __init__(self):
+    def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
+                logger=logging, context=ctx.cpu(), work_load_list=None,
+                fixed_param_names=None, state_names=None, group2ctxs=None,
+                compression_params=None):
         LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
         self.logger.info("before push in  _chris_update_params_on_kvstore, time is:",time.time())
