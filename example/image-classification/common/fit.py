@@ -43,6 +43,7 @@ class MyModule(mx.mod.Module):
                 compression_params=None):
         LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+        self.logger = logger
         self.logger.info("before push in  _chris_update_params_on_kvstore, time is:",time.time())
         self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
     def update(self):
