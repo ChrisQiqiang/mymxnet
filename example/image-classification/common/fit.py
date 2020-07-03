@@ -35,13 +35,14 @@ from mxnet.initializer import Uniform
 from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
 from mxnet import context as ctx
+from mxnet.base_module import BaseModule, _check_input_names, _parse_data_desc
 
 class MyModule(mx.mod.Module):
     def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
                  logger=logging, context=ctx.cpu(), work_load_list=None,
                  fixed_param_names=None, state_names=None, group2ctxs=None,
                  compression_params=None):
-        super(Module, self).__init__(logger=logger)
+        super(MyModule, self).__init__(logger=logger)
 
         if isinstance(context, ctx.Context):
             context = [context]
