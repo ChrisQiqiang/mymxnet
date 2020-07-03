@@ -35,7 +35,7 @@ from mxnet.initializer import Uniform
 from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
 from mxnet import context as ctx
-from mxnet.base_module import BaseModule, _check_input_names, _parse_data_desc
+from module.base_module import BaseModule, _check_input_names, _parse_data_desc
 
 class MyModule(mx.mod.Module):
     def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
