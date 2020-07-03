@@ -38,12 +38,60 @@ from mxnet import context as ctx
 
 class MyModule(mx.mod.Module):
     def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
-                logger=logging, context=ctx.cpu(), work_load_list=None,
-                fixed_param_names=None, state_names=None, group2ctxs=None,
-                compression_params=None):
+                 logger=logging, context=ctx.cpu(), work_load_list=None,
+                 fixed_param_names=None, state_names=None, group2ctxs=None,
+                 compression_params=None):
+        super(Module, self).__init__(logger=logger)
+
+        if isinstance(context, ctx.Context):
+            context = [context]
+        self._context = context
+        if work_load_list is None:
+            work_load_list = [1] * len(self._context)
+        assert len(work_load_list) == len(self._context)
+        self._work_load_list = work_load_list
+
+        self._group2ctxs = group2ctxs
+
+        self._symbol = symbol
+
+        data_names = list(data_names) if data_names is not None else []
+        label_names = list(label_names) if label_names is not None else []
+        state_names = list(state_names) if state_names is not None else []
+        fixed_param_names = list(fixed_param_names) if fixed_param_names is not None else []
+
+        _check_input_names(symbol, data_names, "data", True)
+        _check_input_names(symbol, label_names, "label", False)
+        _check_input_names(symbol, state_names, "state", True)
+        _check_input_names(symbol, fixed_param_names, "fixed_param", True)
+
+        arg_names = symbol.list_arguments()
+        input_names = data_names + label_names + state_names
+        self._param_names = [x for x in arg_names if x not in input_names]
+        self._fixed_param_names = fixed_param_names
+        self._aux_names = symbol.list_auxiliary_states()
+        self._data_names = data_names
+        self._label_names = label_names
+        self._state_names = state_names
+        self._output_names = symbol.list_outputs()
+
+        self._arg_params = None
+        self._aux_params = None
+        self._params_dirty = False
+
+        self._compression_params = compression_params
+        self._optimizer = None
+        self._kvstore = None
+        self._update_on_kvstore = None
+        self._updater = None
+        self._preload_opt_states = None
+        self._grad_req = None
+
+        self._exec_group = None
+        self._data_shapes = None
+        self._label_shapes = None
         LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
-        self.logger = logger
         self.logger.info("before push in  _chris_update_params_on_kvstore, time is:",time.time())
         self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
     def update(self):
