@@ -36,39 +36,17 @@ from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
 
 
-
-
-def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
-    """Perform update of param_arrays from grad_arrays on kvstore."""
-
-    # print("before push in  _chris_update_params_on_kvstore, time is:",time.time())
-    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
-        arg_list, grad_list = pair
-        if grad_list[0] is None:
-            continue
-        name = param_names[index]
-        # push gradient, priority is negative index
-        kvstore.push(name, grad_list, priority=-index)
-    if os.getenv('PULL_SLEEP_TIME') is not None:
-        delay = float(os.getenv('PULL_SLEEP_TIME'))
-        print(delay)
-        time.sleep(delay)
-    # print("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
-    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
-        arg_list, grad_list = pair
-        if grad_list[0] is None:
-            continue
-        name = param_names[index]
-        # pull back the weights
-        kvstore.pull(name, arg_list, priority=-index)
-    # print("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
-
 class MyModule(mx.mod.Module):
+    def __init__(self):
+        LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+        DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+        self.logger.info("before push in  _chris_update_params_on_kvstore, time is:",time.time())
+        self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
     def update(self):
         assert self.binded and self.params_initialized and self.optimizer_initialized
         self._params_dirty = True
         if self._update_on_kvstore:
-            _chris_update_params_on_kvstore(self._exec_group.param_arrays,
+            self._chris_update_params_on_kvstore(self._exec_group.param_arrays,
                                       self._exec_group.grad_arrays,
                                       self._kvstore, self._exec_group.param_names)
         else:
@@ -78,6 +56,30 @@ class MyModule(mx.mod.Module):
                            num_device=len(self._context),
                            kvstore=self._kvstore,
                            param_names=self._exec_group.param_names)
+
+    def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
+        """Perform update of param_arrays from grad_arrays on kvstore."""
+
+        for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+            arg_list, grad_list = pair
+            if grad_list[0] is None:
+                continue
+            name = param_names[index]
+            # push gradient, priority is negative index
+            kvstore.push(name, grad_list, priority=-index)
+        if os.getenv('PULL_SLEEP_TIME') is not None:
+            delay = float(os.getenv('PULL_SLEEP_TIME'))
+            time.sleep(delay)
+        self.logger.info("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
+        for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+            arg_list, grad_list = pair
+            if grad_list[0] is None:
+                continue
+            name = param_names[index]
+            # pull back the weights
+            kvstore.pull(name, arg_list, priority=-index)
+        self.logger.info("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
+
     def fit(self, train_data, eval_data=None, eval_metric='acc',
                 epoch_end_callback=None, batch_end_callback=None, kvstore='local',
                 optimizer='sgd', optimizer_params=(('learning_rate', 0.01),),
@@ -116,18 +118,18 @@ class MyModule(mx.mod.Module):
                     data_batch = next_data_batch
                     if monitor is not None:
                         monitor.tic()
-                    print("before forward and backward, ",time.time())
+                    self.logger.info("before forward and backward, ",time.time())
                     self.forward_backward(data_batch)
-                    print("before update, ",time.time())
+                    self.logger.info("before update: ",time.time())
                     self.update() #异步执行的
-                    print("before update_metric, ",time.time())
+                    self.logger.info("before update_metric: ",time.time())
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
                                         [db.label for db in data_batch],
                                         pre_sliced=True)
                     else:
                         self.update_metric(eval_metric, data_batch.label)
-
+                    self.logger.info("after update_metric, ",time.time())
                     try:
                         # pre fetch next batch
                         next_data_batch = next(data_iter)
@@ -136,11 +138,11 @@ class MyModule(mx.mod.Module):
                         end_of_batch = True
 
                     if monitor is not None:
-                        monitor.toc_print()
+                        monitor.toc_self.logger.info()
 
                     if end_of_batch:
                         eval_name_vals = eval_metric.get_global_name_value()
-                    print("before batch_end_callback, ",time.time())
+                    self.logger.info("before batch_end_callback, ",time.time())
                     if batch_end_callback is not None:
                         batch_end_params = BatchEndParam(epoch=epoch, nbatch=nbatch,
                                                         eval_metric=eval_metric,
@@ -148,7 +150,7 @@ class MyModule(mx.mod.Module):
                         for callback in _as_list(batch_end_callback):
                             callback(batch_end_params)
                     nbatch += 1
-                    print("end of this loop, ",time.time())
+                    self.logger.info("end of this loop, ",time.time())
 
                 # one epoch of training is finished
                 for name, val in eval_name_vals:
@@ -176,6 +178,10 @@ class MyModule(mx.mod.Module):
 
                 # end of 1 epoch, reset the data-iter for another epoch
                 train_data.reset()
+
+
+
+
 
 def get_epoch_size(args, kv):
     return math.ceil(int(args.num_examples / kv.num_workers) / args.batch_size)
