@@ -127,6 +127,9 @@ class MyModule(mx.mod.Module):
                     self.forward_backward(data_batch)
                     self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
+                    self.logger.info("after update: "+str(time.time()))
+                    for db in data_batch:
+                        x = db.label
                     self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
