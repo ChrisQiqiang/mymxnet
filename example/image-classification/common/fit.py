@@ -123,18 +123,18 @@ class MyModule(mx.mod.Module):
                     data_batch = next_data_batch
                     if monitor is not None:
                         monitor.tic()
-                    self.logger.info("before forward and backward, ",time.time())
+                    self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward_backward(data_batch)
-                    self.logger.info("before update: ",time.time())
+                    self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-                    self.logger.info("before update_metric: ",time.time())
+                    self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
                                         [db.label for db in data_batch],
                                         pre_sliced=True)
                     else:
                         self.update_metric(eval_metric, data_batch.label)
-                    self.logger.info("after update_metric, ",time.time())
+                    self.logger.info("after update_metric, "+str(time.time()))
                     try:
                         # pre fetch next batch
                         next_data_batch = next(data_iter)
@@ -147,7 +147,7 @@ class MyModule(mx.mod.Module):
 
                     if end_of_batch:
                         eval_name_vals = eval_metric.get_global_name_value()
-                    self.logger.info("before batch_end_callback, ",time.time())
+                    self.logger.info("before batch_end_callback, "+str(time.time()))
                     if batch_end_callback is not None:
                         batch_end_params = BatchEndParam(epoch=epoch, nbatch=nbatch,
                                                         eval_metric=eval_metric,
@@ -155,7 +155,7 @@ class MyModule(mx.mod.Module):
                         for callback in _as_list(batch_end_callback):
                             callback(batch_end_params)
                     nbatch += 1
-                    self.logger.info("end of this loop, ",time.time())
+                    self.logger.info("end of this loop, "+str(time.time()))
 
                 # one epoch of training is finished
                 for name, val in eval_name_vals:
