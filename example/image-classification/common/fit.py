@@ -127,17 +127,15 @@ class MyModule(mx.mod.Module):
                     self.forward_backward(data_batch)
                     self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-                    self.logger.info("after update: "+str(time.time()))
-                    for db in data_batch:
-                        x = db.label
                     self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
                                         [db.label for db in data_batch],
                                         pre_sliced=True)
+                        self.logger.info("after update_metric : list, "+str(time.time()))
                     else:
                         self.update_metric(eval_metric, data_batch.label)
-                    self.logger.info("after update_metric, "+str(time.time()))
+                        self.logger.info("after update_metric : single, "+str(time.time()))
                     try:
                         # pre fetch next batch
                         next_data_batch = next(data_iter)
