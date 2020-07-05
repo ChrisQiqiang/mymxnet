@@ -126,10 +126,10 @@ class MyModule(mx.mod.Module):
                         """
             os.system(get_task_cmd)
             delay_time = float(os.getenv("DELAY_TIME",1))
-            ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",500))
-            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",500))
-            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",500))
-            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",500))
+            ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
+            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
+            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",800))
+            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",200))
             tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit"
             ################################################################################
             # training loop
@@ -150,6 +150,7 @@ class MyModule(mx.mod.Module):
                     ndarray.waitall()
 
                     ##first part bandwidth allocation
+                    self.logger.info("change bandwidth part1:, "+str(time.time()))
                     cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd1)
 
@@ -161,6 +162,7 @@ class MyModule(mx.mod.Module):
                     time.sleep(delay_time) 
 
                     ##second part bandwidth allocation
+                    self.logger.info("change bandwidth part2:, "+str(time.time()))
                     cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd2)
                     
