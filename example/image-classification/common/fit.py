@@ -148,7 +148,7 @@ class MyModule(mx.mod.Module):
                     ndarray.waitall()
 
                     ##first part bandwidth allocation
-                    self.logger.info("change bandwidth part1:, "+str(time.time()))
+                    # self.logger.info("change bandwidth part1:, "+str(time.time()))
                     cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd1)
 
@@ -160,7 +160,7 @@ class MyModule(mx.mod.Module):
                     time.sleep(delay_time) 
 
                     ##second part bandwidth allocation
-                    self.logger.info("change bandwidth part2:, "+str(time.time()))
+                    # self.logger.info("change bandwidth part2:, "+str(time.time()))
                     cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd2)
                     

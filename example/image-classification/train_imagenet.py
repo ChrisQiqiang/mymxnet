@@ -55,7 +55,7 @@ if __name__ == '__main__':
         num_epochs       = 80,
         lr_step_epochs   = '30,60',
         dtype            = 'float32',
-        disp_batches = 20
+        disp_batches = 1
         # profile_server_suffix = 1
     )
     args = parser.parse_args()
