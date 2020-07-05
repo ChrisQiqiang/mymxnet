@@ -123,12 +123,11 @@ class MyModule(mx.mod.Module):
                         sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit  
                         """
             os.system(get_task_cmd)
-            os.system("sudo sh /home/ubuntu/ps_worker_tc.sh")
             delay_time = float(os.getenv("DELAY_TIME",0.8))
             ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
-            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",200))
-            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",200))
-            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",200))
+            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
+            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",700))
+            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",300))
             tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit"
             ################################################################################
             # training loop
@@ -194,7 +193,7 @@ class MyModule(mx.mod.Module):
                         for callback in _as_list(batch_end_callback):
                             callback(batch_end_params)
                     nbatch += 1
-                    self.logger.info("end of this loop, "+str(time.time()))
+                    # self.logger.info("end of this loop, "+str(time.time()))
 
                 # one epoch of training is finished
                 for name, val in eval_name_vals:
