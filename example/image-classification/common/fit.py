@@ -125,7 +125,7 @@ class MyModule(mx.mod.Module):
                         sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit 
                         """
             os.system(get_task_cmd)
-            delay_time = float(os.getenv("DELAY_TIME",1))
+            delay_time = float(os.getenv("DELAY_TIME",0.8))
             ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
             worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
             ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",800))
@@ -145,7 +145,7 @@ class MyModule(mx.mod.Module):
                     data_batch = next_data_batch
                     if monitor is not None:
                         monitor.tic()
-                    self.logger.info("before forward and backward, "+str(time.time()))
+                    # self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
                     ndarray.waitall()
 
@@ -154,7 +154,7 @@ class MyModule(mx.mod.Module):
                     cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd1)
 
-                    self.logger.info("after forward, "+str(time.time()))
+                    # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
@@ -166,15 +166,15 @@ class MyModule(mx.mod.Module):
                     cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
                     os.system(cmd2)
                     
-                    self.logger.info("before update_metric: "+str(time.time()))
+                    # self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
                                         [db.label for db in data_batch],
                                         pre_sliced=True)
-                        self.logger.info("after update_metric : list, "+str(time.time()))
+                        # self.logger.info("after update_metric : list, "+str(time.time()))
                     else:
                         self.update_metric(eval_metric, data_batch.label)
-                        self.logger.info("after update_metric : single, "+str(time.time()))
+                        # self.logger.info("after update_metric : single, "+str(time.time()))
                     try:
                         # pre fetch next batch
                         next_data_batch = next(data_iter)
@@ -187,7 +187,7 @@ class MyModule(mx.mod.Module):
 
                     if end_of_batch:
                         eval_name_vals = eval_metric.get_global_name_value()
-                    self.logger.info("before batch_end_callback, "+str(time.time()))
+                    # self.logger.info("before batch_end_callback, "+str(time.time()))
                     if batch_end_callback is not None:
                         batch_end_params = BatchEndParam(epoch=epoch, nbatch=nbatch,
                                                         eval_metric=eval_metric,
