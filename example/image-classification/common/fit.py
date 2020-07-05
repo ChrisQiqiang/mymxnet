@@ -109,26 +109,25 @@ class MyModule(mx.mod.Module):
             if not isinstance(eval_metric, metric.EvalMetric):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
-            get_task_cmd = """worker=`ps -ef | grep python3 | grep gpu | awk '{print $2}'` 
-                        ps=`ps -ef | grep python3 | grep role | awk '{print $2}'` 
-                        sudo cgcreate -g net_cls:ps 
+            get_task_cmd = """sudo cgcreate -g net_cls:ps 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
-                        sudo cgclassify -g net_cls:ps $ps 
+                        sudo cgclassify -g net_cls:ps `ps -ef | grep python3 | grep role | awk '{print $2}'` 
                         sudo cgcreate -g net_cls:worker 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/worker/net_cls.classid 
                         sudo echo 0x100004 > /sys/fs/cgroup/net_cls/worker/net_cls.classid 
-                        sudo cgclassify -g net_cls:worker $worker 
+                        sudo cgclassify -g net_cls:worker `ps -ef | grep python3 | grep gpu | awk '{print $2}'` 
                         sudo tc qdisc add dev ens3 root handle 10: htb 
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
-                        sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit 
+                        sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit  
                         """
             os.system(get_task_cmd)
+            os.system("sudo sh /home/ubuntu/ps_worker_tc.sh")
             delay_time = float(os.getenv("DELAY_TIME",0.8))
             ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
-            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
-            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",800))
+            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",200))
+            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",200))
             worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",200))
             tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit"
             ################################################################################
