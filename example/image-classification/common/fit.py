@@ -23,6 +23,7 @@ import re
 import math
 import warnings
 import numpy as np
+import asyncio
 
 import mxnet as mx
 from mxnet import kvstore
@@ -36,6 +37,15 @@ from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
 from mxnet import context as ctx
 from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc
+
+
+
+async def part2_tuning(cmd2,delay_time):
+    #sleep()
+    time.sleep(delay_time) 
+    ##second part bandwidth allocation
+    # self.logger.info("change bandwidth part2:, "+str(time.time()))
+    os.system(cmd2)
 
 def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
@@ -156,14 +166,9 @@ class MyModule(mx.mod.Module):
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-                    #sleep()
-                    time.sleep(delay_time) 
 
-                    ##second part bandwidth allocation
-                    # self.logger.info("change bandwidth part2:, "+str(time.time()))
                     cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
-                    os.system(cmd2)
-                    
+                    asyncio.run(part2_tuning(cmd2,delay_time))
                     # self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
