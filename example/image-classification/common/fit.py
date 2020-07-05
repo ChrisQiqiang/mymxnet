@@ -37,15 +37,16 @@ from mxnet.io import DataDesc, DataIter, DataBatch
 from mxnet.base import _as_list
 from mxnet import context as ctx
 from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc
+from threading import Thread
 
 
 
-async def part2_tuning(cmd2,delay_time):
-    #sleep()
-    time.sleep(delay_time) 
-    ##second part bandwidth allocation
-    # self.logger.info("change bandwidth part2:, "+str(time.time()))
-    os.system(cmd2)
+# async def part2_tuning(cmd2,delay_time):
+#     #sleep()
+#     time.sleep(delay_time) 
+#     ##second part bandwidth allocation
+#     # self.logger.info("change bandwidth part2:, "+str(time.time()))
+#     os.system(cmd2)
 
 def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
@@ -159,16 +160,21 @@ class MyModule(mx.mod.Module):
 
                     ##first part bandwidth allocation
                     # self.logger.info("change bandwidth part1:, "+str(time.time()))
-                    cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
+                    cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
+                    
                     os.system(cmd1)
-
                     # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-
-                    cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
-                    asyncio.run(part2_tuning(cmd2,delay_time))
+                    cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
+                    time.sleep(delay_time) 
+                    ##second part bandwidth allocation
+                    # self.logger.info("change bandwidth part2:, "+str(time.time()))
+                    os.system(cmd2)
+                    
+                    # thread_tuning = Thread(target=part2_tuning,args=(cmd2,delay_time,))
+                    # thread_tuning.start()
                     # self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
