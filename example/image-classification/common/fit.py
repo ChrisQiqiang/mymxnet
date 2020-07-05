@@ -124,8 +124,11 @@ class MyModule(mx.mod.Module):
                     if monitor is not None:
                         monitor.tic()
                     self.logger.info("before forward and backward, "+str(time.time()))
-                    self.forward_backward(data_batch)
-                    self.logger.info("before update: "+str(time.time()))
+                    self.forward(data_batch, is_train=True)
+                    ndarray.waitall()
+                    self.logger.info("after forward, "+str(time.time()))
+                    self.backward()
+                    # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
                     self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
