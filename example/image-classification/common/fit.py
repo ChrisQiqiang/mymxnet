@@ -108,7 +108,29 @@ class MyModule(mx.mod.Module):
                 validation_metric = eval_metric
             if not isinstance(eval_metric, metric.EvalMetric):
                 eval_metric = metric.create(eval_metric)
-
+            ####chris_arg
+            get_task_cmd = """worker=`ps -ef | grep python3 | grep gpu | awk '{print $2}'` 
+                        ps=`ps -ef | grep python3 | grep role | awk '{print $2}'` 
+                        sudo cgcreate -g net_cls:ps 
+                        sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
+                        sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
+                        sudo cgclassify -g net_cls:ps $ps 
+                        sudo cgcreate -g net_cls:worker 
+                        sudo chmod 777 /sys/fs/cgroup/net_cls/worker/net_cls.classid 
+                        sudo echo 0x100004 > /sys/fs/cgroup/net_cls/worker/net_cls.classid 
+                        sudo cgclassify -g net_cls:worker $worker 
+                        sudo tc qdisc add dev ens3 root handle 10: htb 
+                        sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
+                        sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
+                        sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit 
+                        """
+            os.system(get_task_cmd)
+            delay_time = float(os.getenv("DELAY_TIME",1))
+            ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",500))
+            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",500))
+            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",500))
+            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",500))
+            tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit"
             ################################################################################
             # training loop
             ################################################################################
@@ -126,10 +148,22 @@ class MyModule(mx.mod.Module):
                     self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
                     ndarray.waitall()
+
+                    ##first part bandwidth allocation
+                    cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
+                    os.system(cmd1)
+
                     self.logger.info("after forward, "+str(time.time()))
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
+                    #sleep()
+                    time.sleep(delay_time) 
+
+                    ##second part bandwidth allocation
+                    cmd2 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part2))
+                    os.system(cmd2)
+                    
                     self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
