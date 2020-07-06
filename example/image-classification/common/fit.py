@@ -120,7 +120,7 @@ class MyModule(mx.mod.Module):
             if not isinstance(eval_metric, metric.EvalMetric):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
-            if int(os.getenv("TASK_LIMIT", 0)) == 1:
+            if int(os.getenv("TASK_LIMIT", 0)) != 0:  #为0时不分task限制，为1时分task但是每轮更新，为2时分task并但固定
                 get_task_cmd = "sh /home/ubuntu/tc.sh -l 1"
             else:
                 self.logger.info("no_task_bandwidth_limit")
