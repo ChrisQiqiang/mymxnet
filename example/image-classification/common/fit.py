@@ -185,7 +185,7 @@ class MyModule(mx.mod.Module):
                         monitor.tic()
                     # self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
-                    if(os.getenv("TASK_LIMIT", "0") == "1"):
+                    if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         ndarray.waitall()
                         ##first part bandwidth allocation
                         # self.logger.info("change bandwidth part1:, "+str(time.time()))
@@ -195,7 +195,7 @@ class MyModule(mx.mod.Module):
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-                    if(os.getenv("TASK_LIMIT", "0") == "1"):
+                    if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
                         time.sleep(delay_time) 
                         ##second part bandwidth allocation
