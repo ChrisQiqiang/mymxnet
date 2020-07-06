@@ -140,7 +140,7 @@ class MyModule(mx.mod.Module):
             worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",2000))
             ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",2000))
             worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",2000))
-            tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit ceil 2000mbit quantum {}mbit && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit ceil 2000mbit"
+            tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit ceil 2000mbit"
             ################################################################################
             # training loop
             ################################################################################
