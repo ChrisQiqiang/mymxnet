@@ -121,13 +121,31 @@ class MyModule(mx.mod.Module):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
             if int(os.getenv("TASK_LIMIT", 0)) == 1:
-                get_task_cmd = """sudo modprobe ifb numifbs=1
-                        sudo ip link set dev ifb0 up
-                        sudo tc qdisc add dev ens3 handle ffff: ingress
-                        sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
-                        sudo tc qdisc add dev ifb0 root handle 10: htb default 1
+                # get_task_cmd = """sudo modprobe ifb numifbs=1
+                #         sudo ip link set dev ifb0 up
+                #         sudo tc qdisc add dev ens3 handle ffff: ingress
+                #         sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
+                #         sudo tc qdisc add dev ifb0 root handle 10: htb default 1
+                #         sudo tc qdisc add dev ens3 root handle 10: htb default 1
+                #         sudo tc class add dev ifb0 parent 10: classid 10:1 htb rate 2000mbit
+                #         sudo tc class add dev ens3 parent 10: classid 10:1 htb rate 2000mbit
+                #         sudo cgcreate -g net_cls:ps 
+                #         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
+                #         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
+                #         sudo cgclassify -g net_cls:ps `ps -ef | grep python3 | grep role | awk '{print $2}'` 
+                #         sudo cgcreate -g net_cls:worker 
+                #         sudo chmod 777 /sys/fs/cgroup/net_cls/worker/net_cls.classid 
+                #         sudo echo 0x100004 > /sys/fs/cgroup/net_cls/worker/net_cls.classid 
+                #         sudo cgclassify -g net_cls:worker `ps -ef | grep python3 | grep gpu | awk '{print $2}'`                  
+                #         sudo tc filter add dev ens3 parent 10:1 handle 10: cgroup 
+                #         sudo tc class add dev ens3 parent 10:1 classid 10:3 htb rate 2000mbit 
+                #         sudo tc class add dev ens3 parent 10:1 classid 10:4 htb rate 2000mbit
+                #         sudo tc filter add dev ifb0 parent 10:1 handle 10: cgroup
+                #         sudo tc class add dev ifb0 parent 10:1 classid 10:3 htb rate 2000mbit
+                #         sudo tc class add dev ifb0 parent 10:1 classid 10:4 htb rate 2000mbit    
+                #         """
+                get_task_cmd = """
                         sudo tc qdisc add dev ens3 root handle 10: htb default 1
-                        sudo tc class add dev ifb0 parent 10: classid 10:1 htb rate 2000mbit
                         sudo tc class add dev ens3 parent 10: classid 10:1 htb rate 2000mbit
                         sudo cgcreate -g net_cls:ps 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
@@ -139,10 +157,7 @@ class MyModule(mx.mod.Module):
                         sudo cgclassify -g net_cls:worker `ps -ef | grep python3 | grep gpu | awk '{print $2}'`                  
                         sudo tc filter add dev ens3 parent 10:1 handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10:1 classid 10:3 htb rate 2000mbit 
-                        sudo tc class add dev ens3 parent 10:1 classid 10:4 htb rate 2000mbit
-                        sudo tc filter add dev ifb0 parent 10:1 handle 10: cgroup
-                        sudo tc class add dev ifb0 parent 10:1 classid 10:3 htb rate 2000mbit
-                        sudo tc class add dev ifb0 parent 10:1 classid 10:4 htb rate 2000mbit    
+                        sudo tc class add dev ens3 parent 10:1 classid 10:4 htb rate 2000mbit  
                         """
                 os.system(get_task_cmd)
             else:
