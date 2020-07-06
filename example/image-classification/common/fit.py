@@ -133,9 +133,14 @@ class MyModule(mx.mod.Module):
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
                         sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit
-                        sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
+                        sudo modprobe ifb numifbs=1
+                        sudo ip link set dev ifb0 up
+                        sudo tc qdisc add dev ens3 handle ffff: ingress
+                        sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
+                        sudo tc qdisc add dev ifb0 root handle 10: htb
+                        sudo tc filter add dev ifb0 parent 10: handle 10: cgroup
                         sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit
-                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit    
+                        sudo tc class add dev ifb0 parent 10: classid 10:4 htb rate 2000mbit    
                         """
                 os.system(get_task_cmd)
                 delay_time = float(os.getenv("DELAY_TIME",0.8))
@@ -145,12 +150,19 @@ class MyModule(mx.mod.Module):
                 worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",400))
                 tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
             else:
+                print("no_task_bandwidth_limit")
                 get_task_cmd = """sudo cgcreate -g net_cls:training 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
-                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep benchmark | awk '{print $2}'` 
+                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep benchmark | awk '{print $2}'`
+                        sudo tc qdisc add dev ens3 root handle 10: htb
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
+                        sudo modprobe ifb numifbs=1
+                        sudo ip link set dev ifb0 up
+                        sudo tc qdisc add dev ens3 handle ffff: ingress
+                        sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
+                        sudo tc qdisc add dev ifb0 root handle 10: htb 
                         sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
                         sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit
                         """
