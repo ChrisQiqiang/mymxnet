@@ -151,7 +151,8 @@ class MyModule(mx.mod.Module):
                 tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
             else:
                 self.logger.info("no_task_bandwidth_limit")
-                get_task_cmd = """sudo cgcreate -g net_cls:training 
+                get_task_cmd = """#!/bin/bash
+                        sudo cgcreate -g net_cls:training 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         pid_list=`ps -ef | grep python3 | grep network | awk '{print $2}'`
