@@ -150,16 +150,17 @@ class MyModule(mx.mod.Module):
                         sudo cgcreate -g net_cls:ps 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
-                        sudo cgclassify -g net_cls:ps `ps -ef | grep python3 | grep role | awk '{print $2}'` 
+                        ps=`ps -ef | grep python3 | grep network | awk '{print $2}'`
+                        sudo cgclassify -g net_cls:ps $ps 
                         sudo cgcreate -g net_cls:worker 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/worker/net_cls.classid 
                         sudo echo 0x100004 > /sys/fs/cgroup/net_cls/worker/net_cls.classid 
-                        sudo cgclassify -g net_cls:worker `ps -ef | grep python3 | grep gpu | awk '{print $2}'`                  
+                        worker=`ps -ef | grep python3 | grep gpu | awk '{print $2}'`
+                        sudo cgclassify -g net_cls:worker  $worker                
                         sudo tc filter add dev ens3 parent 10:1 handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10:1 classid 10:3 htb rate 2000mbit 
                         sudo tc class add dev ens3 parent 10:1 classid 10:4 htb rate 2000mbit  
                         """
-                os.system(get_task_cmd)
             else:
                 self.logger.info("no_task_bandwidth_limit")
                 # get_task_cmd = """sudo cgcreate -g net_cls:training 
