@@ -120,7 +120,8 @@ class MyModule(mx.mod.Module):
             if not isinstance(eval_metric, metric.EvalMetric):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
-            get_task_cmd = """sudo cgcreate -g net_cls:ps 
+            if os.getenv("TASK_LIMIT", "0") == "1" :
+                get_task_cmd = """sudo cgcreate -g net_cls:ps 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
                         sudo cgclassify -g net_cls:ps `ps -ef | grep python3 | grep role | awk '{print $2}'` 
@@ -131,15 +132,28 @@ class MyModule(mx.mod.Module):
                         sudo tc qdisc add dev ens3 root handle 10: htb 
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
-                        sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit  
+                        sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit
+                        sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
+                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit  
                         """
-            os.system(get_task_cmd)
-            delay_time = float(os.getenv("DELAY_TIME",0.8))
-            ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
-            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
-            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",700))
-            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",300))
-            tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit"
+                os.system(get_task_cmd)
+                delay_time = float(os.getenv("DELAY_TIME",0.8))
+                ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
+                worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
+                ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",600))
+                worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",400))
+                tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
+            else:
+                get_task_cmd = """sudo cgcreate -g net_cls:training 
+                        sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
+                        sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
+                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep benchmark | awk '{print $2}'` 
+                        sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
+                        sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
+                        sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
+                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit
+                        """
+                os.system(get_task_cmd)
             ################################################################################
             # training loop
             ################################################################################
@@ -156,22 +170,22 @@ class MyModule(mx.mod.Module):
                         monitor.tic()
                     # self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
-                    ndarray.waitall()
-
-                    ##first part bandwidth allocation
-                    # self.logger.info("change bandwidth part1:, "+str(time.time()))
-                    cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
-                    
-                    os.system(cmd1)
+                    if(os.getenv("TASK_LIMIT", "0") == "1"):
+                        ndarray.waitall()
+                        ##first part bandwidth allocation
+                        # self.logger.info("change bandwidth part1:, "+str(time.time()))
+                        cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
+                        os.system(cmd1)
                     # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
-                    cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
-                    time.sleep(delay_time) 
-                    ##second part bandwidth allocation
-                    # self.logger.info("change bandwidth part2:, "+str(time.time()))
-                    os.system(cmd2)
+                    if(os.getenv("TASK_LIMIT", "0") == "1"):
+                        cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
+                        time.sleep(delay_time) 
+                        ##second part bandwidth allocation
+                        # self.logger.info("change bandwidth part2:, "+str(time.time()))
+                        os.system(cmd2)
                     
                     # thread_tuning = Thread(target=part2_tuning,args=(cmd2,delay_time,))
                     # thread_tuning.start()
