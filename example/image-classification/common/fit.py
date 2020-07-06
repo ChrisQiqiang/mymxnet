@@ -102,9 +102,9 @@ class MyModule(mx.mod.Module):
                 validation_metric=None, monitor=None, sparse_row_id_fn=None):
             assert num_epoch is not None, 'please specify number of epochs'
 
-            LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-            DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
-            self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
+            # LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+            # DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+            # self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
 
             self.bind(data_shapes=train_data.provide_data, label_shapes=train_data.provide_label,
                     for_training=True, force_rebind=force_rebind)
@@ -155,7 +155,8 @@ class MyModule(mx.mod.Module):
                         sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         pid_list=`ps -ef | grep python3 | grep network | awk '{print $2}'`
-                        arr=(`echo $pid_list | tr '\n' ' '`)
+                        arr=`echo $pid_list | tr '\n' ' '`
+                        echo ${arr[@]}
                         sudo cgclassify -g net_cls:training ${arr[@]}
                         sudo tc qdisc add dev ens3 root handle 10: htb
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
