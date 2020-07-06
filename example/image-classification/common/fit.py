@@ -121,18 +121,19 @@ class MyModule(mx.mod.Module):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
             if int(os.getenv("TASK_LIMIT", 0)) == 1:
-                get_task_cmd = "sudo sh /home/ubuntu/tc.sh"
+                get_task_cmd = "sh /home/ubuntu/tc.sh -l 1"
             else:
                 self.logger.info("no_task_bandwidth_limit")
-                get_task_cmd = """sudo modprobe ifb numifbs=1
-                                sudo ip link set dev ifb0 up
-                                sudo tc qdisc add dev ens3 handle ffff: ingress
-                                sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
-                                sudo tc qdisc add dev ifb0 root handle 1: htb default 1
-                                sudo tc class add dev ifb0 parent 1: classid 1:1 htb rate 2000mbit
-                                sudo tc qdisc add dev ens3 root handle 10: htb default 1
-                                sudo tc class add dev ens3 parent 10: classid 10:1 htb rate 2000mbit 
-                                """
+                # get_task_cmd = """sudo modprobe ifb numifbs=1
+                #                 sudo ip link set dev ifb0 up
+                #                 sudo tc qdisc add dev ens3 handle ffff: ingress
+                #                 sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
+                #                 sudo tc qdisc add dev ifb0 root handle 1: htb default 1
+                #                 sudo tc class add dev ifb0 parent 1: classid 1:1 htb rate 2000mbit
+                #                 sudo tc qdisc add dev ens3 root handle 10: htb default 1
+                #                 sudo tc class add dev ens3 parent 10: classid 10:1 htb rate 2000mbit 
+                #                 """
+                get_task_cmd = "sh /home/ubuntu/tc.sh -l 0"
             os.system(get_task_cmd)
             delay_time = float(os.getenv("DELAY_TIME",0.8))
             ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",2000))
@@ -159,7 +160,7 @@ class MyModule(mx.mod.Module):
                     ndarray.waitall()
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         ##first part bandwidth allocation
-                        # self.logger.info("change bandwidth part1:, "+str(time.time()))
+                        self.logger.info("change bandwidth part1:, "+str(time.time()))
                         cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
                         os.system(cmd1)
                     # self.logger.info("after forward, "+str(time.time()))
