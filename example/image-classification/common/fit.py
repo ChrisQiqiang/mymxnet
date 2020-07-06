@@ -154,7 +154,9 @@ class MyModule(mx.mod.Module):
                 get_task_cmd = """sudo cgcreate -g net_cls:training 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
-                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep network | awk '{print $2}'`
+                        pid_list=`ps -ef | grep python3 | grep network | awk '{print $2}'`
+                        arr=(`echo $pid_list | tr '\n' ' '`)
+                        sudo cgclassify -g net_cls:training ${arr[@]}
                         sudo tc qdisc add dev ens3 root handle 10: htb
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
