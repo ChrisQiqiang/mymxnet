@@ -120,7 +120,7 @@ class MyModule(mx.mod.Module):
             if not isinstance(eval_metric, metric.EvalMetric):
                 eval_metric = metric.create(eval_metric)
             ####chris_arg
-            if os.getenv("TASK_LIMIT", "0") == "1" :
+            if int(os.getenv("TASK_LIMIT", 0)) == 1:
                 get_task_cmd = """sudo cgcreate -g net_cls:ps 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/ps/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/ps/net_cls.classid 
@@ -150,11 +150,11 @@ class MyModule(mx.mod.Module):
                 worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",400))
                 tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
             else:
-                print("no_task_bandwidth_limit")
+                self.logger.info("no_task_bandwidth_limit")
                 get_task_cmd = """sudo cgcreate -g net_cls:training 
                         sudo chmod 777 /sys/fs/cgroup/net_cls/training/net_cls.classid 
                         sudo echo 0x100003 > /sys/fs/cgroup/net_cls/training/net_cls.classid 
-                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep benchmark | awk '{print $2}'`
+                        sudo cgclassify -g net_cls:training `ps -ef | grep python3 | grep network | awk '{print $2}'`
                         sudo tc qdisc add dev ens3 root handle 10: htb
                         sudo tc filter add dev ens3 parent 10: handle 10: cgroup 
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
