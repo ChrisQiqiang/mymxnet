@@ -143,12 +143,6 @@ class MyModule(mx.mod.Module):
                         sudo tc class add dev ifb0 parent 10: classid 10:4 htb rate 2000mbit    
                         """
                 os.system(get_task_cmd)
-                delay_time = float(os.getenv("DELAY_TIME",0.8))
-                ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
-                worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
-                ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",600))
-                worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",400))
-                tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
             else:
                 self.logger.info("no_task_bandwidth_limit")
                 get_task_cmd = """sudo cgcreate -g net_cls:training 
@@ -168,7 +162,13 @@ class MyModule(mx.mod.Module):
                         sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
                         sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit
                         """
-                os.system(get_task_cmd)
+            os.system(get_task_cmd)
+            delay_time = float(os.getenv("DELAY_TIME",0.8))
+            ps_upload_bandwidth_part1 = int(os.getenv("PS_UPLOAD_BANDWIDTH1",200))
+            worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",800))
+            ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",600))
+            worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",400))
+            tc_command = "sudo tc class change dev ens3 parent 10: classid 10:3 htb rate {}mbit  && sudo tc class change dev ens3 parent 10: classid 10:4 htb rate {}mbit"
             ################################################################################
             # training loop
             ################################################################################
