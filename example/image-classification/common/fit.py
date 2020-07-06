@@ -134,7 +134,8 @@ class MyModule(mx.mod.Module):
                         sudo tc class add dev ens3 parent 10: classid 10:3 htb rate 2000mbit 
                         sudo tc class add dev ens3 parent 10: classid 10:4 htb rate 2000mbit
                         sudo tc filter add dev ifb0 parent 10: handle 10: cgroup 
-                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit  
+                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit
+                        sudo tc class add dev ifb0 parent 10: classid 10:3 htb rate 2000mbit    
                         """
                 os.system(get_task_cmd)
                 delay_time = float(os.getenv("DELAY_TIME",0.8))
