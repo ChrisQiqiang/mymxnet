@@ -140,9 +140,9 @@ class MyModule(mx.mod.Module):
             worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",2000))
             ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",2000))
             worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",2000))
-            ceil_bandwidth = int(os.getenv("CEIL_BANDWIDTH",2000))
+            # ceil_bandwidth = int(os.getenv("CEIL_BANDWIDTH",2000))
             # tc_command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate {}mbit ceil " + str(ceil_bandwidth) + "mbit && sudo tc class change dev ens3 parent 1: classid 1:4 htb rate {}mbit ceil " + str(ceil_bandwidth) + "mbit"
-            tc_command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb ceil {}mbit  && sudo tc class change dev ens3 parent 1: classid 1:4 htb ceil {}mbit" 
+            tc_command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate {}mbit ceil {}mbit  && sudo tc class change dev ens3 parent 1: classid 1:4 htb rate {}mbit ceil {}mbit" 
             ################################################################################
             # training loop
             ################################################################################
@@ -163,14 +163,14 @@ class MyModule(mx.mod.Module):
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         ##first part bandwidth allocation
                         # self.logger.info("change bandwidth part1:, "+str(time.time()))
-                        cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
+                        cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
                         os.system(cmd1)
                     # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
                     # self.logger.info("before update: "+str(time.time()))
                     self.update() #异步执行的
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
-                        cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
+                        cmd2 = tc_command.format(str(ps_upload_bandwidth_part2),str(ps_upload_bandwidth_part2),str(worker_upload_bandwidth_part2),str(worker_upload_bandwidth_part2))
                         time.sleep(delay_time) 
                         ##second part bandwidth allocation
                         # self.logger.info("change bandwidth part2:, "+str(time.time()))
