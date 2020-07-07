@@ -140,7 +140,8 @@ class MyModule(mx.mod.Module):
             worker_upload_bandwidth_part1 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH1",2000))
             ps_upload_bandwidth_part2 = int(os.getenv("PS_UPLOAD_BANDWIDTH2",2000))
             worker_upload_bandwidth_part2 = int(os.getenv("WORKER_UPLOAD_BANDWIDTH2",2000))
-            tc_command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate {}mbit ceil 2000mbit && sudo tc class change dev ens3 parent 1: classid 1:4 htb rate {}mbit ceil 2000mbit"
+            ceil_bandwidth = int(os.getenv("CEIL_BANDWIDTH",2000))
+            tc_command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate {}mbit ceil 4000mbit && sudo tc class change dev ens3 parent 1: classid 1:4 htb rate {}mbit ceil 4000mbit"
             ################################################################################
             # training loop
             ################################################################################
@@ -299,7 +300,6 @@ def add_fit_args(parser):
     train.add_argument('--num-layers', type=int,
                        help='number of layers in the neural network, \
                              required by some networks such as resnet')
-    train.add_argument('--disp_batches', type=int)
     train.add_argument('--gpus', type=str,
                        help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu')
     train.add_argument('--kv-store', type=str, default='device',
