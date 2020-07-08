@@ -159,9 +159,9 @@ class MyModule(mx.mod.Module):
                         monitor.tic()
                     # self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
-                    ndarray.waitall()
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         ##first part bandwidth allocation
+                        ndarray.waitall()
                         # self.logger.info("change bandwidth part1:, "+str(time.time()))
                         cmd1 = tc_command.format(str(ps_upload_bandwidth_part1),str(ps_upload_bandwidth_part1),str(worker_upload_bandwidth_part1),str(worker_upload_bandwidth_part1))
                         os.system(cmd1)
