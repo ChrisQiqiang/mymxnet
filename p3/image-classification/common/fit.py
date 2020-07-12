@@ -103,7 +103,7 @@ class MyModule(mx.mod.Module):
                     cmd_up = tc_command.format("ens3", x, x, "ens3", y, y)
                     cmd_down = tc_command.format("ifb0", y, y, "ifb0", x, x)
                     os.system(cmd_up)
-                    os.system(cmd_down)
+                    # os.system(cmd_down)
                 # self.logger.info("after forward, "+str(time.time()))
                 self.backward()
                 # self.logger.info("before update: "+str(time.time()))
@@ -117,7 +117,7 @@ class MyModule(mx.mod.Module):
                     ##second part bandwidth allocation
                     # self.logger.info("change bandwidth part2:, "+str(time.time()))
                     os.system(cmd_up)
-                    os.system(cmd_down)
+                    # os.system(cmd_down)
                 try:
                     # pre fetch next batch
                     next_data_batch = next(data_iter)
