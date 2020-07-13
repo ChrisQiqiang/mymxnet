@@ -48,7 +48,7 @@ from threading import Thread
 #     # self.logger.info("change bandwidth part2:, "+str(time.time()))
 #     os.system(cmd2)
 
-def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
+def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
 
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):

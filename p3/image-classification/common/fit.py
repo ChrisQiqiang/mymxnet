@@ -41,7 +41,7 @@ from mxnet import context as ctx
 from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc
 from threading import Thread
 
-def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
+def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
     """Perform update of param_arrays from grad_arrays on kvstore."""
 
     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
