@@ -58,18 +58,19 @@ def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, pa
         name = param_names[index]
         # push gradient, priority is negative index
         kvstore.push(name, grad_list, priority=-index)
-        kvstore.pull(name, arg_list, priority=-index)
+    if os.getenv("GLOBAL_BARRIER", 0) == 1:
+        ndarray.waitall()
     # if os.getenv('PULL_SLEEP_TIME') is not None:
     #     delay = float(os.getenv('PULL_SLEEP_TIME'))
     #     time.sleep(delay)
     # # self.logger.info("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
-    # for index, pair in enumerate(zip(param_arrays, grad_arrays)):
-    #     arg_list, grad_list = pair
-    #     if grad_list[0] is None:
-    #         continue
-    #     name = param_names[index]
-    #     # pull back the weights
-    #     kvstore.pull(name, arg_list, priority=-index)
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
+        # pull back the weights
+        kvstore.pull(name, arg_list, priority=-index)
     # self.logger.info("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
 
 
@@ -79,7 +80,7 @@ class MyModule(mx.mod.Module):
         assert self.binded and self.params_initialized and self.optimizer_initialized
         self._params_dirty = True
         if self._update_on_kvstore:
-            _update_params_on_kvstore(self._exec_group.param_arrays,
+            _chris_update_params_on_kvstore(self._exec_group.param_arrays,
                                       self._exec_group.grad_arrays,
                                       self._kvstore, self._exec_group.param_names)
         else:
@@ -101,10 +102,6 @@ class MyModule(mx.mod.Module):
                 force_rebind=False, force_init=False, begin_epoch=0, num_epoch=None,
                 validation_metric=None, monitor=None, sparse_row_id_fn=None):
             assert num_epoch is not None, 'please specify number of epochs'
-
-            # LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-            # DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
-            # self.logger.basicConfig(filename="/home/ubuntu/chris.log", level=self.logger.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
 
             self.bind(data_shapes=train_data.provide_data, label_shapes=train_data.provide_label,
                     for_training=True, force_rebind=force_rebind)

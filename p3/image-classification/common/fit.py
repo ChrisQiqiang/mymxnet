@@ -41,7 +41,46 @@ from mxnet import context as ctx
 from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc
 from threading import Thread
 
+def _chris_update_params_on_kvstore(self, param_arrays, grad_arrays, kvstore, param_names):
+    """Perform update of param_arrays from grad_arrays on kvstore."""
+
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
+        # push gradient, priority is negative index
+        kvstore.push(name, grad_list, priority=-index)
+    if os.getenv("GLOBAL_BARRIER", 0) == 1:
+        ndarray.waitall()
+    # if os.getenv('PULL_SLEEP_TIME') is not None:
+    #     delay = float(os.getenv('PULL_SLEEP_TIME'))
+    #     time.sleep(delay)
+    # self.logger.info("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
+    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+        arg_list, grad_list = pair
+        if grad_list[0] is None:
+            continue
+        name = param_names[index]
+        # pull back the weights
+        kvstore.pull(name, arg_list, priority=-index)
+
+
 class MyModule(mx.mod.Module):
+    def update(self):
+        assert self.binded and self.params_initialized and self.optimizer_initialized
+        self._params_dirty = True
+        if self._update_on_kvstore:
+            _chris_update_params_on_kvstore(self._exec_group.param_arrays,
+                                      self._exec_group.grad_arrays,
+                                      self._kvstore, self._exec_group.param_names)
+        else:
+            mx.model._update_params(self._exec_group.param_arrays,
+                           self._exec_group.grad_arrays,
+                           updater=self._updater,
+                           num_device=len(self._context),
+                           kvstore=self._kvstore,
+                           param_names=self._exec_group.param_names)
     
     def fit(self, train_data, eval_data=None, eval_metric='acc',
             epoch_end_callback=None, batch_end_callback=None, kvstore='local',
