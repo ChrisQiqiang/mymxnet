@@ -82,7 +82,8 @@ class MyModule(mx.mod.Module):
         if self._update_on_kvstore:
             _chris_update_params_on_kvstore(self._exec_group.param_arrays,
                                       self._exec_group.grad_arrays,
-                                      self._kvstore, self._exec_group.param_names)
+                                      self._kvstore, 
+                                      self._exec_group.param_names)
         else:
             mx.model._update_params(self._exec_group.param_arrays,
                            self._exec_group.grad_arrays,
