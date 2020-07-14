@@ -48,49 +48,71 @@ from threading import Thread
 #     # self.logger.info("change bandwidth part2:, "+str(time.time()))
 #     os.system(cmd2)
 
-def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
-    """Perform update of param_arrays from grad_arrays on kvstore."""
-
-    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
-        arg_list, grad_list = pair
-        if grad_list[0] is None:
-            continue
-        name = param_names[index]
-        # push gradient, priority is negative index
-        kvstore.push(name, grad_list, priority=-index)
-    if os.getenv("GLOBAL_BARRIER", 0) == 1:
-        ndarray.waitall()
-    # if os.getenv('PULL_SLEEP_TIME') is not None:
-    #     delay = float(os.getenv('PULL_SLEEP_TIME'))
-    #     time.sleep(delay)
-    # # self.logger.info("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
-    for index, pair in enumerate(zip(param_arrays, grad_arrays)):
-        arg_list, grad_list = pair
-        if grad_list[0] is None:
-            continue
-        name = param_names[index]
-        # pull back the weights
-        kvstore.pull(name, arg_list, priority=-index)
-    # self.logger.info("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
+# def _chris_update_params_on_kvstore(param_arrays, grad_arrays, kvstore, param_names):
+#     """Perform update of param_arrays from grad_arrays on kvstore."""
+#     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+#         arg_list, grad_list = pair
+#         if grad_list[0] is None:
+#             continue
+#         name = param_names[index]
+#         # pull back the weights
+#         kvstore.pull(name, grad_list, priority=-index)
+#     if os.getenv("GLOBAL_BARRIER", 0) == 1:
+#         ndarray.waitall()
+#     # if os.getenv('PULL_SLEEP_TIME') is not None:
+#     #     delay = float(os.getenv('PULL_SLEEP_TIME'))
+#     #     time.sleep(delay)
+#     # # self.logger.info("before pull in  _chris_update_params_on_kvstore, time is:",time.time())
+#     for index, pair in enumerate(zip(param_arrays, grad_arrays)):
+#         arg_list, grad_list = pair
+#         if grad_list[0] is None:
+#             continue
+#         name = param_names[index]
+#         # pull back the weights
+#         kvstore.pull(name, arg_list, priority=-index)
+#     # self.logger.info("after pull in  _chris_update_params_on_kvstore, time is:",time.time())
 
 
 
 class MyModule(mx.mod.Module):
-    def update(self):
+    # def update(self):
+    #     assert self.binded and self.params_initialized and self.optimizer_initialized
+    #     self._params_dirty = True
+    #     if self._update_on_kvstore:
+    #         _chris_update_params_on_kvstore(self._exec_group.param_arrays,
+    #                                   self._exec_group.grad_arrays,
+    #                                   self._kvstore, 
+    #                                   self._exec_group.param_names)
+    #     else:
+    #         mx.model._update_params(self._exec_group.param_arrays,
+    #                        self._exec_group.grad_arrays,
+    #                        updater=self._updater,
+    #                        num_device=len(self._context),
+    #                        kvstore=self._kvstore,
+    #                        param_names=self._exec_group.param_names)
+
+    
+    def _chris_push(self):
         assert self.binded and self.params_initialized and self.optimizer_initialized
         self._params_dirty = True
-        if self._update_on_kvstore:
-            _chris_update_params_on_kvstore(self._exec_group.param_arrays,
-                                      self._exec_group.grad_arrays,
-                                      self._kvstore, 
-                                      self._exec_group.param_names)
-        else:
-            mx.model._update_params(self._exec_group.param_arrays,
-                           self._exec_group.grad_arrays,
-                           updater=self._updater,
-                           num_device=len(self._context),
-                           kvstore=self._kvstore,
-                           param_names=self._exec_group.param_names)
+        for index, pair in enumerate(zip(self._exec_group.param_arrays, self._exec_group.grad_arrays)):
+            arg_list, grad_list = pair
+            if grad_list[0] is None:
+                continue
+            name = self._exec_group.param_names[index]
+            # push gradient, priority is negative index
+            self._kvstore.push(name, grad_list, priority=-index)
+        
+    def _chris_pull(self):
+        assert self.binded and self.params_initialized and self.optimizer_initialized
+        self._params_dirty = True
+        for index, pair in enumerate(zip(self._exec_group.param_arrays, self._exec_group.grad_arrays)):
+            arg_list, grad_list = pair
+            if grad_list[0] is None:
+                continue
+            name = self._exec_group.param_names[index]
+            # push gradient, priority is negative index
+            self._kvstore.pull(name, arg_list, priority=-index)
 
 
 
@@ -122,15 +144,6 @@ class MyModule(mx.mod.Module):
                 get_task_cmd = "sh /home/ubuntu/tc.sh -l 1"
             else:
                 self.logger.info("no_task_bandwidth_limit")
-                # get_task_cmd = """sudo modprobe ifb numifbs=1
-                #                 sudo ip link set dev ifb0 up
-                #                 sudo tc qdisc add dev ens3 handle ffff: ingress
-                #                 sudo tc filter add dev ens3 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
-                #                 sudo tc qdisc add dev ifb0 root handle 1: htb default 1
-                #                 sudo tc class add dev ifb0 parent 1: classid 1:1 htb rate 2000mbit
-                #                 sudo tc qdisc add dev ens3 root handle 10: htb default 1
-                #                 sudo tc class add dev ens3 parent 10: classid 10:1 htb rate 2000mbit 
-                #                 """
                 get_task_cmd = "sh /home/ubuntu/tc.sh -l 0"
             os.system(get_task_cmd)
             delay_time = float(os.getenv("DELAY_TIME",0.8))
@@ -157,6 +170,7 @@ class MyModule(mx.mod.Module):
                         monitor.tic()
                     # self.logger.info("before forward and backward, "+str(time.time()))
                     self.forward(data_batch, is_train=True)
+                    self._chris_push()
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         ##first part bandwidth allocation
                         ndarray.waitall()
@@ -169,8 +183,10 @@ class MyModule(mx.mod.Module):
                         os.system(cmd_down)
                     # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
+                    if os.getenv("GLOBAL_BARRIER", 0) == 1:
+                        ndarray.waitall()
                     # self.logger.info("before update: "+str(time.time()))
-                    self.update() #异步执行的
+                    self._chris_pull() #异步执行的
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         x = str(ps_upload_bandwidth_part2)
                         y = str(worker_upload_bandwidth_part2)
@@ -181,9 +197,6 @@ class MyModule(mx.mod.Module):
                         # self.logger.info("change bandwidth part2:, "+str(time.time()))
                         os.system(cmd_up)
                         os.system(cmd_down)
-                    
-                    # thread_tuning = Thread(target=part2_tuning,args=(cmd2,delay_time,))
-                    # thread_tuning.start()
                     # self.logger.info("before update_metric: "+str(time.time()))
                     if isinstance(data_batch, list):
                         self.update_metric(eval_metric,
