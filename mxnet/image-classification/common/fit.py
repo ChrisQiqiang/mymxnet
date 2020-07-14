@@ -183,9 +183,12 @@ class MyModule(mx.mod.Module):
                         os.system(cmd_down)
                     # self.logger.info("after forward, "+str(time.time()))
                     self.backward()
-                    if os.getenv("GLOBAL_BARRIER", 0) == 1:
-                        ndarray.waitall()
+                    # if os.getenv("GLOBAL_BARRIER", 0) == 1:
+                    #     ndarray.waitall()
                     # self.logger.info("before update: "+str(time.time()))
+                    if os.getenv('PULL_SLEEP_TIME') is not None:
+                            delay = float(os.getenv('PULL_SLEEP_TIME'))
+                            time.sleep(delay)
                     self._chris_pull() #异步执行的
                     if int(os.getenv("TASK_LIMIT", 0)) == 1:
                         x = str(ps_upload_bandwidth_part2)
